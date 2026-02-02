@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>固定費やばさ診断</title>
+  <meta name="description" content="手取りと固定費を入れるだけ。ロック解除で『詰まない家計の作り方（作戦ボード）』が使えます。" />
+  <style>
+    :root{
+      --bg:#f3f5f9;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e2e8f0;
+      --shadow: 0 8px 24px rgba(15, 23, 42, .08);
+      --radius: 18px;
+      --good:#16a34a;
+      --ok:#0ea5e9;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 14px 12px 90px;
+    }
+    .wrap{max-width:820px;margin:0 auto}
+    .hero{
+      background: linear-gradient(135deg, rgba(14,165,233,.12), rgba(239,68,68,.10));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px 16px 14px;
+      box-shadow: var(--shadow);
+    }
+    .title{font-size:20px;font-weight:900;margin:0 0 6px}
+    .subtitle{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+    .grid{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 900px){
+      body{padding: 18px 14px 90px;}
+      .grid{grid-template-columns: 1.05fr .95fr;}
+    }
+    .card{
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    h2{margin:0 0 10px;font-size:15px;letter-spacing:.02em}
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 160px;
+      gap: 10px;
+      align-items:center;
+      padding: 8px 0;
+      border-bottom: 1px dashed #eef2f7;
+    }
+    .row:last-child{border-bottom:0}
+    label{font-size:13px;font-weight:750}
+    .hint{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-top:2px;line-height:1.35}
+    input{
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      font-size: 14px;
+      outline: none;
+      background: #fbfdff;
+    }
+    input:focus{border-color:#93c5fd; box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+    button{
+      appearance:none;
+      border: 1px solid var(--line);
+      background: #0f172a;
+      color: #fff;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 850;
+      cursor:pointer;
+    }
+    button.secondary{background:#fff;color:#0f172a}
+    button.ghost{background:transparent;color:#0f172a}
+    .small{font-size:12px;color:var(--muted);line-height:1.5;margin:10px 0 0}
+
+    .score{display:flex;align-items:center;gap:14px}
+    .donut{
+      width:92px;height:92px;border-radius:999px;
+      background: conic-gradient(var(--ok) 0deg, var(--ok) 0deg, #e5e7eb 0deg);
+      position:relative;flex:0 0 auto;
+    }
+    .donut::after{
+      content:""; position:absolute; inset:12px; background:#fff; border-radius:999px; border:1px solid var(--line);
+    }
+    .donut span{position:absolute;inset:0;display:grid;place-items:center;z-index:2;font-weight:900;font-size:16px}
+    .kpi{display:grid;gap:6px}
+    .kpi .big{font-size:22px;font-weight:950;line-height:1.1}
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:7px 10px;border-radius:999px;border:1px solid var(--line);
+      font-size:12px;font-weight:900;width:fit-content;background:#fff;
+    }
+    .dot{width:10px;height:10px;border-radius:50%}
+    .advice{
+      margin-top:10px;border-radius:16px;border:1px solid var(--line);
+      background:#fbfdff;padding:12px;line-height:1.65;font-size:13px;
+    }
+    .table{margin-top:10px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff}
+    .trow{
+      display:grid;grid-template-columns: 1fr 110px;gap:10px;
+      padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;align-items:center;
+    }
+    .trow:last-child{border-bottom:0}
+    .right{text-align:right;font-variant-numeric: tabular-nums;}
+    .muted{color:var(--muted)}
+
+    /* ===== Premium (作戦ボード) ===== */
+    .boardTop{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fbfdff;
+      padding:12px;
+      margin-top:10px;
+    }
+    .boardTop .head{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+    }
+    .boardTop .hTitle{font-weight:950;font-size:14px;margin:0}
+    .boardTop .hSub{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.55}
+    .pill{
+      font-size:11px;padding:6px 9px;border-radius:999px;background:#0f172a;color:#fff;font-weight:900;white-space:nowrap;
+    }
+
+    .meter{
+      margin-top:10px;
+      background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;
+    }
+    .meterRow{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-bottom:8px}
+    .bar{
+      height:12px;border-radius:999px;background:#e5e7eb;overflow:hidden;border:1px solid var(--line);
+    }
+    .bar > div{height:100%;width:0%;background:var(--ok);transition:width .25s ease;}
+    .barLabels{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:6px}
+
+    .beforeAfter{
+      margin-top:10px;
+      display:grid;grid-template-columns:1fr;gap:10px;
+    }
+    @media (min-width: 900px){
+      .beforeAfter{grid-template-columns:1fr 1fr;}
+    }
+    .miniCard{
+      background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;
+    }
+    .miniCard .k{font-size:11px;color:var(--muted);margin:0 0 6px}
+    .miniCard .v{font-size:18px;font-weight:950;margin:0}
+    .miniCard .s{font-size:12px;color:var(--muted);margin:6px 0 0;line-height:1.5}
+
+    .tasks{
+      margin-top:12px;
+      display:grid;grid-template-columns:1fr;gap:10px;
+    }
+    .taskCard{
+      background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;
+    }
+    .taskHead{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;
+    }
+    .taskHead .name{font-weight:950;font-size:13px;margin:0}
+    .tag{
+      font-size:11px;padding:5px 8px;border-radius:999px;border:1px solid var(--line);color:#0f172a;background:#fff;font-weight:900;
+    }
+
+    /* Toggle switch */
+    .switch{position:relative;display:inline-block;width:46px;height:26px;flex:0 0 auto;}
+    .switch input{opacity:0;width:0;height:0}
+    .slider{
+      position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;
+      background:#e5e7eb;border:1px solid var(--line);transition:.2s;border-radius:999px;
+    }
+    .slider:before{
+      position:absolute;content:"";height:20px;width:20px;left:3px;top:2px;
+      background:white;border:1px solid var(--line);transition:.2s;border-radius:999px;
+    }
+    .switch input:checked + .slider{background:#0f172a}
+    .switch input:checked + .slider:before{transform:translateX(20px)}
+
+    .taskBody{font-size:12px;color:var(--muted);line-height:1.6}
+    .control{
+      margin-top:10px;
+      border-top:1px dashed #eef2f7;
+      padding-top:10px;
+      display:grid;gap:8px;
+    }
+    .controlLine{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .controlLine b{font-variant-numeric: tabular-nums;}
+    input[type="range"]{width:100%}
+    .quick{
+      display:flex;flex-wrap:wrap;gap:8px;margin-top:4px
+    }
+    .qbtn{
+      font-size:12px;font-weight:900;
+      padding:7px 10px;border-radius:12px;border:1px solid var(--line);
+      background:#fff;color:#0f172a;cursor:pointer;
+    }
+
+    .nextMove{
+      margin-top:12px;
+      background:#0f172a;color:#fff;border-radius:16px;padding:12px;border:1px solid rgba(255,255,255,.1);
+    }
+    .nextMove .t{margin:0 0 6px;font-weight:950}
+    .nextMove .d{margin:0;color:rgba(255,255,255,.85);font-size:13px;line-height:1.6}
+
+    .copyRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .foot{margin-top:10px;font-size:11px;color:var(--muted);line-height:1.6}
+
+    /* Lock */
+    .lock{
+      margin-top: 12px;
+      border:1px dashed #cbd5e1;border-radius:16px;padding:12px;background:#f8fafc;
+    }
+    .lockhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+    .lockhead strong{font-size:13px}
+    .unlock{display:flex;gap:10px;align-items:center;margin-top:10px;}
+    .unlock input{flex:1}
+    .hidden{display:none !important;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <p class="title">固定費やばさ診断</p>
+      <p class="subtitle">手取りと固定費を入れるだけで「固定費率」と危険度を判定。<b>解除後は“作戦ボード”で押すだけ改善。</b><br>※金額はすべて <b>月額</b> で入力。</p>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h2>入力</h2>
+
+        <div class="row">
+          <div>
+            <label for="takehome">手取り（月）</label>
+            <span class="hint">例：350,000</span>
+          </div>
+          <input id="takehome" type="number" inputmode="numeric" min="0" placeholder="350000">
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="housing">住宅ローン / 家賃</label>
+            <span class="hint">例：100,000</span>
+          </div>
+          <input id="housing" type="number" inputmode="numeric" min="0" placeholder="100000">
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="carloan">車ローン（合計）</label>
+            <span class="hint">複数台なら合算</span>
+          </div>
+          <input id="carloan" type="number" inputmode="numeric" min="0" placeholder="50000">
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="carMonths">車ローン残り（月数）</label>
+            <span class="hint">例：36（分からなければ空でOK）</span>
+          </div>
+          <input id="carMonths" type="number" inputmode="numeric" min="0" placeholder="36">
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="insurance">保険（合計）</label>
+            <span class="hint">生命/医療/学資など固定で出る分</span>
+          </div>
+          <input id="insurance" type="number" inputmode="numeric" min="0" placeholder="20000">
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="subs">サブスク / 通信 / 会費</label>
+            <span class="hint">携帯/ネット/動画/ジム等</span>
+          </div>
+          <input id="subs" type="number" inputmode="numeric" min="0" placeholder="15000">
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="utilities">光熱費（平均）</label>
+            <span class="hint">電気・ガス・水道の平均</span>
+          </div>
+          <input id="utilities" type="number" inputmode="numeric" min="0" placeholder="20000">
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="others">その他固定費</label>
+            <span class="hint">駐車場/習い事/定期積立など</span>
+          </div>
+          <input id="others" type="number" inputmode="numeric" min="0" placeholder="0">
+        </div>
+
+        <div class="actions">
+          <button id="calcBtn">診断する</button>
+          <button class="secondary" id="saveBtn">保存</button>
+          <button class="secondary" id="loadBtn">読み込み</button>
+          <button class="ghost" id="resetBtn">リセット</button>
+        </div>
+
+        <p class="small">※「固定費」には食費・日用品などの変動費は入れない想定（ここでは固定で毎月消えるものだけ）。</p>
+      </section>
+
+      <section class="card">
+        <h2>結果</h2>
+
+        <div class="score">
+          <div class="donut" id="donut"><span id="ratioLabel">--%</span></div>
+          <div class="kpi">
+            <div class="badge">
+              <span class="dot" id="dot" style="background: var(--ok)"></span>
+              <span id="level">未診断</span>
+            </div>
+            <div class="big" id="fixedTotal">固定費：-- 円</div>
+            <div class="muted" id="rest">残り：-- 円（変動費＋貯金/投資）</div>
+          </div>
+        </div>
+
+        <div class="advice" id="advice">
+          ここにアドバイスが表示されます。左で入力して「診断する」を押してね。
+        </div>
+
+        <div class="table">
+          <div class="trow"><div class="muted">内訳（固定費）</div><div class="muted right">月額</div></div>
+          <div class="trow"><div>住宅</div><div class="right" id="tHousing">--</div></div>
+          <div class="trow"><div>車ローン</div><div class="right" id="tCar">--</div></div>
+          <div class="trow"><div>保険</div><div class="right" id="tIns">--</div></div>
+          <div class="trow"><div>サブスク/通信/会費</div><div class="right" id="tSubs">--</div></div>
+          <div class="trow"><div>光熱費</div><div class="right" id="tUtil">--</div></div>
+          <div class="trow"><div>その他</div><div class="right" id="tOther">--</div></div>
+        </div>
+
+        <div class="actions" style="margin-top:12px">
+          <button class="secondary" id="shareBtn">結果をコピー</button>
+        </div>
+
+        <!-- ロック -->
+        <div class="lock" id="lockBox">
+          <div class="lockhead">
+            <strong>有料：詰まない家計の作り方（作戦ボード）</strong>
+            <span class="pill">購入特典</span>
+          </div>
+          <div class="muted" style="font-size:12px;line-height:1.55">
+            ON/OFFで固定費が動く。安全帯まであといくらかが見える。次の一手も出る。
+          </div>
+          <div class="unlock">
+            <input id="code" placeholder="合言葉を入力">
+            <button id="unlockBtn">解除</button>
+          </div>
+          <div class="foot">※合言葉は購入者にだけ伝える想定。</div>
+        </div>
+
+        <!-- 解除後 -->
+        <div class="card hidden" id="premiumBox" style="margin-top:12px">
+          <h2>詰まない家計の作り方</h2>
+          <div id="premiumRoot"></div>
+          <div class="foot">※一般的な助言です。最終判断はあなたの状況（家族/健康/仕事/地域）に合わせて。</div>
+        </div>
+
+      </section>
+    </div>
+  </div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+  const fmtYen = (n) => `${Math.round(Number(n||0)).toLocaleString("ja-JP")} 円`;
+  const yen = (n) => `${Math.round(Number(n||0)).toLocaleString("ja-JP")}円`;
+  const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
+
+  const inputs = ["takehome","housing","carloan","carMonths","insurance","subs","utilities","others"].map(el);
+
+  function getValues(){
+    const v = {};
+    for (const i of inputs) v[i.id] = Math.max(0, Number(i.value || 0));
+    return v;
+  }
+
+  function baseFixed(v){
+    return v.housing + v.carloan + v.insurance + v.subs + v.utilities + v.others;
+  }
+
+  function addMonthsToYyyyMm(months){
+    const m = Number(months || 0);
+    if (!isFinite(m) || m <= 0) return null;
+    const d = new Date();
+    d.setMonth(d.getMonth() + m);
+    const y = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    return `${y}年${mm}月`;
+  }
+
+  function setDonut(percent, colorVar){
+    const p = Math.max(0, Math.min(100, percent));
+    const deg = Math.round(p * 3.6);
+    const donut = el("donut");
+    donut.style.background = `conic-gradient(${getComputedStyle(document.documentElement).getPropertyValue(colorVar)} 0deg, ${getComputedStyle(document.documentElement).getPropertyValue(colorVar)} ${deg}deg, #e5e7eb ${deg}deg)`;
+  }
+
+  function judge(ratio){
+    if (!isFinite(ratio)) return {level:"未診断", color:"--ok", msg:"入力して診断してね。"};
+    if (ratio < 40) return {level:"余裕（良）", color:"--good", msg:"固定費率が低めでかなり良い。ここからは『守る』が効く。先取りを固定するのが最優先。"};
+    if (ratio < 50) return {level:"注意（まあOK）", color:"--ok", msg:"悪くないけど、油断すると苦しい帯。サブスク/通信の棚卸し→保険見直しが刺さりやすい。"};
+    if (ratio < 60) return {level:"危険（要テコ入れ）", color:"--warn", msg:"固定費が重く、収入が揺れる月に詰まりやすい。『保険』『車』『通信』のどれかで固定費率を落とすのが近道。"};
+    return {level:"ヤバい（最優先で改善）", color:"--bad", msg:"かなり危険。家計が固定費に支配されやすい状態。今月中に『保険/通信/車』から手を付けるのが最短。"};
+  }
+
+  /* ===== Premium board state ===== */
+  function defaultCuts(v){
+    // “アプリっぽさ”用：デフォルトの削減幅（目安）。ユーザーがスライダーで調整できる。
+    const ins = v.insurance >= 30000 ? 10000 : (v.insurance >= 20000 ? 5000 : (v.insurance >= 10000 ? 2000 : 0));
+    const subs = v.subs >= 15000 ? 5000 : (v.subs >= 10000 ? 2000 : (v.subs >= 6000 ? 1000 : 0));
+    const car  = v.carloan >= 50000 ? 20000 : (v.carloan >= 30000 ? 10000 : (v.carloan > 0 ? 5000 : 0));
+    return {ins, subs, car};
+  }
+
+  function getBoardState(){
+    const raw = localStorage.getItem("fixed_board_state");
+    if (!raw) return null;
+    try{ return JSON.parse(raw); }catch(e){ return null; }
+  }
+  function setBoardState(s){
+    localStorage.setItem("fixed_board_state", JSON.stringify(s));
+  }
+
+  function computeTargets(v, currentRatio){
+    // 安全帯は45%（ざっくり）
+    const safeRatio = 45;
+    const take = v.takehome || 0;
+    const fixed = baseFixed(v);
+    const safeFixed = Math.round(take * safeRatio / 100);
+    const needToSafe = Math.max(0, fixed - safeFixed);
+
+    // 危険度に応じて「当面の目標」も自動
+    let drop = 0;
+    if (currentRatio >= 60) drop = 10;
+    else if (currentRatio >= 50) drop = 7;
+    else if (currentRatio >= 40) drop = 5;
+    else drop = 0;
+
+    const targetRatio = clamp((currentRatio||0) - drop, 0, 100);
+    const targetFixed = Math.round(take * targetRatio / 100);
+    const needToTarget = Math.max(0, fixed - targetFixed);
+
+    return {safeRatio, needToSafe, drop, targetRatio, needToTarget};
+  }
+
+  function renderPremium(v){
+    const root = el("premiumRoot");
+    if (!root) return;
+
+    const fixed0 = baseFixed(v);
+    const ratio0 = v.takehome>0 ? (fixed0/v.takehome)*100 : 0;
+    const t = computeTargets(v, ratio0);
+
+    // 初回：状態を作る
+    const def = defaultCuts(v);
+    let state = getBoardState();
+    if (!state){
+      state = {
+        onIns: false, onSubs: true, onCar: false, // 最初は通信/サブスクをON推奨（アプリ感）
+        cutIns: def.ins, cutSubs: def.subs, cutCar: def.car,
+        mission: {d1:false,d2:false,d3:false,d4:false,d5:false,d6:false,d7:false},
+        futureLock: true // 車ローン完済後：先取り固定（演出）
+      };
+      setBoardState(state);
+    }else{
+      // 入力が変わった時、デフォルトが0→過去値が0のままだと寂しいので補正
+      if (state.cutIns === undefined) state.cutIns = def.ins;
+      if (state.cutSubs === undefined) state.cutSubs = def.subs;
+      if (state.cutCar === undefined) state.cutCar = def.car;
+    }
+
+    // ON/OFFの削減を反映（車は“削減”というより難易度高めなので、ON時のみ固定費を下げる扱い）
+    const cutNow =
+      (state.onIns ? state.cutIns : 0) +
+      (state.onSubs ? state.cutSubs : 0) +
+      (state.onCar ? state.cutCar : 0);
+
+    const fixed1 = Math.max(0, fixed0 - cutNow);
+    const ratio1 = v.takehome>0 ? (fixed1/v.takehome)*100 : 0;
+
+    // 安全帯まであと
+    const safeFixed = Math.round((v.takehome||0) * (t.safeRatio/100));
+    const needNow = Math.max(0, fixed0 - safeFixed);
+    const needAfter = Math.max(0, fixed1 - safeFixed);
+
+    // 進捗（安全帯に向けてどれだけ進んだか）
+    const prog = needNow===0 ? 100 : Math.round(((needNow - needAfter) / needNow) * 100);
+    const progClamped = clamp(prog,0,100);
+
+    // 次の一手（残ってる削減ポテンシャルが一番大きいもの）
+    const potentials = [
+      {k:"ins", name:"保険（積み立て→掛け捨て寄せ）", pot: def.ins, on: state.onIns},
+      {k:"subs", name:"携帯/通信/サブスク棚卸し", pot: def.subs, on: state.onSubs},
+      {k:"car", name:"車（ローン/保有コスト）", pot: def.car, on: state.onCar},
+    ].filter(x=>x.pot>0);
+
+    let next = null;
+    for (const p of potentials.sort((a,b)=>b.pot-a.pot)){
+      if (!p.on){ next = p; break; }
+    }
+    if (!next) next = {name:"今の作戦は良い感じ。次は“先取り固定”を決める", pot:0};
+
+    // 車ローン演出（未来の解放）
+    const payoff = addMonthsToYyyyMm(v.carMonths);
+    const freed = v.carloan || 0;
+    const futureMsg = (freed>0)
+      ? `車ローン完済で <b>毎月 +${yen(freed)}</b> の余白が生まれる（${payoff ? payoff+"頃" : "残り月数を入れると表示"}）。`
+      : `車ローンが0なら、ここは最強。完済イベントは発生しない。`;
+
+    // ミッション進捗
+    const m = state.mission;
+    const done = Object.values(m).filter(Boolean).length;
+    const mprog = Math.round((done/7)*100);
+
+    // HTMLを構築
+    root.innerHTML = `
+      <div class="boardTop">
+        <div class="head">
+          <div>
+            <p class="hTitle">作戦ボード：押すだけで改善</p>
+            <p class="hSub">
+              安全帯（固定費率${t.safeRatio}%）まで <b>あと${yen(needAfter)}</b>
+              ${t.drop>0 ? `／ 当面目標：固定費率 <b>-${t.drop}%</b>（${Math.round(t.targetRatio)}%）` : `／ 目標：削減より先取り固定`}
+            </p>
+          </div>
+          <span class="pill">AFTERが動く</span>
+        </div>
+
+        <div class="meter">
+          <div class="meterRow">
+            <span>安全帯までの進捗</span>
+            <b>${progClamped}%</b>
+          </div>
+          <div class="bar"><div style="width:${progClamped}%"></div></div>
+          <div class="barLabels"><span>今</span><span>安全帯</span></div>
+        </div>
+
+        <div class="beforeAfter">
+          <div class="miniCard">
+            <p class="k">BEFORE</p>
+            <p class="v">固定費率 ${Math.round(ratio0)}%</p>
+            <p class="s">固定費 ${yen(fixed0)} ／ 安全帯まであと ${yen(needNow)}</p>
+          </div>
+          <div class="miniCard">
+            <p class="k">AFTER（作戦ON反映）</p>
+            <p class="v">固定費率 ${Math.round(ratio1)}%</p>
+            <p class="s">固定費 ${yen(fixed1)} ／ 安全帯まであと ${yen(needAfter)}</p>
+          </div>
+        </div>
+
+        <div class="nextMove">
+          <p class="t">次の一手</p>
+          <p class="d">
+            ${next.pot>0
+              ? `<b>${next.name}</b> を押すと、改善が一段進む（目安 -${yen(next.pot)}）。`
+              : `${next.name}`
+            }
+          </p>
+        </div>
+
+        <div class="copyRow">
+          <button class="secondary" id="copyPlanBtn">この作戦をコピー</button>
+          <button class="secondary" id="resetPlanBtn">作戦を初期化</button>
+        </div>
+      </div>
+
+      <div class="tasks">
+        ${taskCardHTML("ins",
+          "保険：積み立て → 掛け捨て寄せ",
+          "固定費を軽くする。『不安を買う』から『必要最小限だけ守る』へ。",
+          state.onIns, state.cutIns,
+          def.ins, 0, Math.max(0, Math.min(30000, v.insurance||0))
+        )}
+
+        ${taskCardHTML("subs",
+          "携帯キャリア見直し＋サブスク棚卸し",
+          "ノーダメで削れるゾーン。まずは“何に入ってるか”の見える化。",
+          state.onSubs, state.cutSubs,
+          def.subs, 0, Math.max(0, Math.min(20000, v.subs||0))
+        )}
+
+        ${taskCardHTML("car",
+          "車：ローンの出口を見える化",
+          `${futureMsg}`,
+          state.onCar, state.cutCar,
+          def.car, 0, Math.max(0, Math.min(40000, v.carloan||0))
+        )}
+
+        <div class="taskCard">
+          <div class="taskHead">
+            <p class="name">7日ミッション（進捗 ${mprog}%）</p>
+            <span class="tag">続く仕組み</span>
+          </div>
+          <div class="taskBody">
+            <label style="display:block;margin:6px 0"><input type="checkbox" data-m="d1" ${m.d1?'checked':''}> Day1：サブスク一覧を出す</label>
+            <label style="display:block;margin:6px 0"><input type="checkbox" data-m="d2" ${m.d2?'checked':''}> Day2：携帯のGB/通話/割引を確認</label>
+            <label style="display:block;margin:6px 0"><input type="checkbox" data-m="d3" ${m.d3?'checked':''}> Day3：保険を一覧にする（目的/期間）</label>
+            <label style="display:block;margin:6px 0"><input type="checkbox" data-m="d4" ${m.d4?'checked':''}> Day4：見直し見積もり依頼を送る</label>
+            <label style="display:block;margin:6px 0"><input type="checkbox" data-m="d5" ${m.d5?'checked':''}> Day5：車ローン残り月数を確認して入力</label>
+            <label style="display:block;margin:6px 0"><input type="checkbox" data-m="d6" ${m.d6?'checked':''}> Day6：削減を確定（残す/切る）</label>
+            <label style="display:block;margin:6px 0"><input type="checkbox" data-m="d7" ${m.d7?'checked':''}> Day7：浮いた分を先取りに固定</label>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // イベント接続
+    bindTask("ins", state, v);
+    bindTask("subs", state, v);
+    bindTask("car", state, v);
+
+    // ミッション
+    root.querySelectorAll('input[type="checkbox"][data-m]').forEach(ch=>{
+      ch.addEventListener("change", ()=>{
+        const key = ch.getAttribute("data-m");
+        const s = getBoardState() || state;
+        s.mission = s.mission || {};
+        s.mission[key] = !!ch.checked;
+        setBoardState(s);
+        renderPremium(v);
+      });
+    });
+
+    // コピー
+    el("copyPlanBtn").addEventListener("click", async ()=>{
+      const text =
+`【詰まない家計：作戦ボード】
+BEFORE 固定費率：${Math.round(ratio0)}%（固定費 ${yen(fixed0)}）
+AFTER  固定費率：${Math.round(ratio1)}%（固定費 ${yen(fixed1)}）
+安全帯まであと：${yen(needAfter)}
+
+ONにした作戦：
+- 保険：${state.onIns ? "ON（-"+yen(state.cutIns)+"）" : "OFF"}
+- 通信/サブスク：${state.onSubs ? "ON（-"+yen(state.cutSubs)+"）" : "OFF"}
+- 車：${state.onCar ? "ON（-"+yen(state.cutCar)+"）" : "OFF"}
+
+次の一手：${next.name}`;
+      try{
+        await navigator.clipboard.writeText(text);
+        alert("コピーしました（メモやXに貼れます）");
+      }catch(e){
+        prompt("手動コピーしてね", text);
+      }
+    });
+
+    // 初期化
+    el("resetPlanBtn").addEventListener("click", ()=>{
+      localStorage.removeItem("fixed_board_state");
+      renderPremium(v);
+    });
+  }
+
+  function taskCardHTML(key, title, desc, on, cut, def, min, max){
+    const safeMax = Math.max(min, max);
+    const start = clamp(cut ?? def ?? 0, min, safeMax);
+    return `
+      <div class="taskCard" id="task-${key}">
+        <div class="taskHead">
+          <div>
+            <p class="name">${title}</p>
+            <div class="taskBody">${desc}</div>
+          </div>
+          <label class="switch" title="ON/OFF">
+            <input type="checkbox" data-on="${key}" ${on ? "checked" : ""}>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="control">
+          <div class="controlLine">
+            <span class="muted">削減目標（あなたが調整OK）</span>
+            <b>-<span data-cutlabel="${key}">${yen(start)}</span></b>
+          </div>
+          <input type="range" data-range="${key}" min="${min}" max="${safeMax}" step="500" value="${start}">
+          <div class="quick" data-quick="${key}">
+            <button class="qbtn" data-q="${key}:0">0</button>
+            <button class="qbtn" data-q="${key}:${Math.round(safeMax*0.25)}">弱</button>
+            <button class="qbtn" data-q="${key}:${Math.round(safeMax*0.5)}">中</button>
+            <button class="qbtn" data-q="${key}:${Math.round(safeMax*0.75)}">強</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function bindTask(key, state, v){
+    const root = el("premiumRoot");
+    const onEl = root.querySelector(`input[data-on="${key}"]`);
+    const range = root.querySelector(`input[data-range="${key}"]`);
+    const label = root.querySelector(`span[data-cutlabel="${key}"]`);
+    const quickWrap = root.querySelector(`div[data-quick="${key}"]`);
+
+    const map = {ins:"cutIns", subs:"cutSubs", car:"cutCar"};
+    const onMap = {ins:"onIns", subs:"onSubs", car:"onCar"};
+
+    function update(val){
+      const s = getBoardState() || state;
+      s[map[key]] = clamp(Number(val||0), Number(range.min), Number(range.max));
+      setBoardState(s);
+      label.textContent = yen(s[map[key]]);
+      renderPremium(v);
+    }
+
+    onEl.addEventListener("change", ()=>{
+      const s = getBoardState() || state;
+      s[onMap[key]] = !!onEl.checked;
+      setBoardState(s);
+      renderPremium(v);
+    });
+
+    range.addEventListener("input", ()=>update(range.value));
+
+    quickWrap.querySelectorAll("button[data-q]").forEach(btn=>{
+      btn.addEventListener("click", (e)=>{
+        e.preventDefault();
+        const [,value] = btn.getAttribute("data-q").split(":");
+        range.value = clamp(Number(value||0), Number(range.min), Number(range.max));
+        update(range.value);
+      });
+    });
+  }
+
+  function render(){
+    const v = getValues();
+    const fixed = baseFixed(v);
+    const ratio = v.takehome > 0 ? (fixed / v.takehome) * 100 : NaN;
+    const rest = v.takehome - fixed;
+
+    el("fixedTotal").textContent = `固定費：${fmtYen(fixed)}`;
+    el("rest").textContent = `残り：${fmtYen(rest)}（変動費＋貯金/投資）`;
+    el("ratioLabel").textContent = isFinite(ratio) ? `${Math.round(ratio)}%` : "--%";
+
+    el("tHousing").textContent = fmtYen(v.housing);
+    el("tCar").textContent = fmtYen(v.carloan);
+    el("tIns").textContent = fmtYen(v.insurance);
+    el("tSubs").textContent = fmtYen(v.subs);
+    el("tUtil").textContent = fmtYen(v.utilities);
+    el("tOther").textContent = fmtYen(v.others);
+
+    const j = judge(ratio);
+    el("level").textContent = j.level;
+    el("dot").style.background = `var(${j.color})`;
+    el("advice").innerHTML = j.msg;
+
+    setDonut(isFinite(ratio) ? ratio : 0, j.color);
+
+    const unlocked = localStorage.getItem("fixed_unlock") === "1";
+    if (unlocked){
+      renderPremium(v);
+    }
+  }
+
+  function save(){
+    const v = getValues();
+    localStorage.setItem("fixed_app_data", JSON.stringify(v));
+    alert("保存しました");
+  }
+  function load(){
+    const raw = localStorage.getItem("fixed_app_data");
+    if (!raw){ alert("保存データがありません"); return; }
+    const v = JSON.parse(raw);
+    for (const i of inputs) i.value = v[i.id] ?? "";
+    render();
+    alert("読み込みました");
+  }
+  function resetAll(){
+    for (const i of inputs) i.value = "";
+    localStorage.removeItem("fixed_app_data");
+    render();
+  }
+
+  async function shareCopy(){
+    const v = getValues();
+    const fixed = baseFixed(v);
+    const ratio = v.takehome > 0 ? Math.round((fixed / v.takehome) * 100) : 0;
+    const j = judge(ratio);
+    const text =
+`【固定費やばさ診断】
+固定費率：${ratio}%
+判定：${j.level}
+固定費：${fixed.toLocaleString("ja-JP")}円/月
+
+（手取りと固定費を入れるだけで診断できる）`;
+    try{
+      await navigator.clipboard.writeText(text);
+      alert("コピーしました");
+    }catch(e){
+      prompt("手動コピーしてね", text);
+    }
+  }
+
+  function unlock(){
+    const code = (el("code").value || "").trim();
+
+    // ★合言葉（固定）
+    const VALID = ["yusuke-note"];
+
+    if (!VALID.includes(code)){
+      alert("合言葉が違います");
+      return;
+    }
+    localStorage.setItem("fixed_unlock","1");
+    el("lockBox").classList.add("hidden");
+    el("premiumBox").classList.remove("hidden");
+    render();
+    alert("解除しました");
+  }
+
+  el("calcBtn").addEventListener("click", render);
+  el("saveBtn").addEventListener("click", save);
+  el("loadBtn").addEventListener("click", load);
+  el("resetBtn").addEventListener("click", resetAll);
+  el("shareBtn").addEventListener("click", shareCopy);
+  el("unlockBtn").addEventListener("click", unlock);
+
+  for (const i of inputs){
+    i.addEventListener("input", () => {
+      const th = Number(el("takehome").value || 0);
+      if (th > 0) render();
+    });
+  }
+
+  (function init(){
+    const unlocked = localStorage.getItem("fixed_unlock") === "1";
+    if (unlocked){
+      el("lockBox").classList.add("hidden");
+      el("premiumBox").classList.remove("hidden");
+    }
+    render();
+  })();
+</script>
+</body>
+</html>
